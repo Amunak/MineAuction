@@ -64,6 +64,7 @@ public final class CheckVersion {
      * Checks version, logs to console
      *
      * @param plugin the plugin
+     * @see check(Player null, LoggableJavaPlugin plugin)
      */
     public static void check(LoggableJavaPlugin plugin) {
         check(null, plugin);

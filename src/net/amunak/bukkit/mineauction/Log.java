@@ -29,7 +29,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * (warn, info, fine). Player messages are marked based on log level.
  *
  * @author Amunak
- * @version 2.0
+ * @version 2.1
  */
 public final class Log {
 
@@ -77,77 +77,77 @@ public final class Log {
     }
 
     /**
-     * @see log(l, p, m, false)
+     * @see log(Level l, Player p, String m, Boolean false)
      */
     public void log(Level l, Player p, String m) {
         this.log(l, p, m, false);
     }
 
     /**
-     * @see log(l, null, m, true)
+     * @see log(Level l, Player null, String m, Boolean true)
      */
     public void log(Level l, String m) {
         this.log(l, null, m, true);
     }
 
     /**
-     * @see log(Level.WARNING, p, m, c)
+     * @see log(Level Level.WARNING, Player p, String m, Boolean c)
      */
     public void warning(Player p, String m, Boolean c) {
         this.log(Level.WARNING, p, m, c);
     }
 
     /**
-     * @see log(Level.WARNING, p, m, false)
+     * @see log(Level Level.WARNING, Player p, String m, Boolean false)
      */
     public void warning(Player p, String m) {
         this.log(Level.WARNING, p, m, false);
     }
 
     /**
-     * @see log(Level.WARNING, null, m, true)
+     * @see log(Level Level.WARNING, Player null, String m, Boolean true)
      */
     public void warning(String m) {
         this.log(Level.WARNING, null, m, true);
     }
 
     /**
-     * @see log(Level.INFO, p, m, c)
+     * @see log(Level Level.INFO, Player p, String m, Boolean c)
      */
     public void info(Player p, String m, Boolean c) {
         this.log(Level.INFO, p, m, c);
     }
 
     /**
-     * @see log(Level.INFO, p, m, false)
+     * @see log(Level Level.INFO, Player p, String m, Boolean false)
      */
     public void info(Player p, String m) {
         this.log(Level.INFO, p, m, false);
     }
 
     /**
-     * @see log(Level.INFO, null, m, true)
+     * @see log(Level Level.INFO, Player null, String m, Boolean true)
      */
     public void info(String m) {
         this.log(Level.INFO, null, m, true);
     }
 
     /**
-     * @see log(Level.FINE, p, m, c)
+     * @see log(Level Level.FINE, Player p, String m, Boolean c)
      */
     public void fine(Player p, String m, Boolean c) {
         this.log(Level.FINE, p, m, c);
     }
 
     /**
-     * @see log(Level.FINE, p, m, false)
+     * @see log(Level Level.FINE, Player p, String m, Boolean false)
      */
     public void fine(Player p, String m) {
         this.log(Level.FINE, p, m, false);
     }
 
     /**
-     * @see log(Level.FINE, null, m, true)
+     * @see log(Level Level.FINE, Player null, String m, Boolean true)
      */
     public void fine(String m) {
         this.log(Level.FINE, null, m, true);
