@@ -4,3 +4,11 @@
 *.jar
 *.war
 *.ear
+
+# Netbeans Project Files #
+build.xml
+manifest.mf
+/build/
+/dist/
+/nbproject/
+/support/
