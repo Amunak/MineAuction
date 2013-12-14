@@ -1,0 +1,29 @@
+# Database connection configuration
+#   You will have to edit this section according to your database setup
+#   Note: plugin was tested on MariaDB (MySQL)
+database:
+  # Connector URL
+  #   example:     jdbc:       mysql      ://localhost: 3306 /  MineAuction
+  #   explanation: jdbc:<type of database>://<address>:<port>/<database name>
+  #     <type of database> We suggest using mysql
+  #     <address> If your database is not on local machine, change this
+  #     <port> Common database port is 3306
+  #     <database name> The name of your database
+  url: 'jdbc:mysql://localhost:3306/MineAuction'
+  # Connection user (database login)
+  #   AVOID using the user 'root' if you can - preferably make one user
+  #         for MineAuction only, with access to MineAuction's tables only
+  user: 'mineauction'
+  # Connection (database) password
+  password: ''
+  # Prefix of all table names. Usefull to distinguish 
+  prefix: 'ma_'
+
+# ---------------------------------------------------------------------------- #
+# Plugin's options
+options:
+  general:
+    # Check for updates automatically
+    checkVersion: true
+    # Enable verbose (debug) logging to console
+    verboseLogging: false
