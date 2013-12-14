@@ -31,6 +31,7 @@ public final class MineAuction extends LoggableJavaPlugin {
 
     protected Connection db;
     public FileConfiguration config;
+    final static int SQL_TIMEOUT = 0;
 
     @Override
     public void onEnable() {
@@ -70,6 +71,12 @@ public final class MineAuction extends LoggableJavaPlugin {
     protected void checkDatabaseConnection() {
         try {
             this.db = DriverManager.getConnection(this.config.getString("database.url"), this.config.getString("database.user"), this.config.getString("database.password"));
+            if (this.db.isValid(SQL_TIMEOUT)) {
+                log.fine("database connection established successfully");
+            } else {
+                log.warning("database connection invalid: unknown error");
+            }
+
         } catch (SQLException ex) {
             log.warning("database connection failed: " + ex.getMessage());
             log.fine("url: '" + this.config.getString("database.url") + "'");
@@ -90,7 +97,7 @@ public final class MineAuction extends LoggableJavaPlugin {
     public void onDisable() {
         log.fine("disabling plugin...");
         try {
-            if (db.isValid(0)) {
+            if (db.isValid(SQL_TIMEOUT)) {
                 db.close();
             }
         } catch (SQLException ex) {
