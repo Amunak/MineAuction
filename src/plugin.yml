@@ -1,0 +1,19 @@
+name: MineAuction
+main: net.amunak.bukkit.mineauction.MineAuction
+version: 0.1
+description: MineAuction is a system for trading offline and auctioning items using web interface
+website: http://dev.bukkit.org/server-mods/mine-auction/
+author: Amunak
+authors: [Sognus, Sekiphp]
+load: POSTWORLD
+softdepend: []
+permissions:
+  mineauction.*:
+    description: Gives full control over MineAuction
+    default: op
+    children:
+commands:
+  ma:
+    description: MineAuction something
+    usage: "Usage: /<command> help"
+    aliases: [mineauction, mauction, auction]
