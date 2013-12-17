@@ -56,14 +56,14 @@ public final class MineAuction extends LoggableJavaPlugin {
         //checkDatabaseConnection();
 
         //load data
-        if (!this.config.getBoolean("options.signs.enable")) {
+        if (this.config.getBoolean("options.signs.enable")) {
             this.signsStorage = new SignStorage(this);
             this.signsStorage.load();
         }
 
         //register listeners, run
         //getCommand(null)
-        if (!this.config.getBoolean("options.signs.enable")) {
+        if (this.config.getBoolean("options.signs.enable")) {
             getServer().getPluginManager().registerEvents(new SignInteractionListener(this), this);
         }
     }
@@ -86,24 +86,29 @@ public final class MineAuction extends LoggableJavaPlugin {
             log.fine("Database password is empty");
         }
 
-        List<String> identifierWarning = new ArrayList<>(2);
-        if (!this.config.isList("options.signTexts.identifier")
-                || this.config.getStringList("options.signTexts.identifier").size() != 2) {
-            log.warning("options.signTexts.identifier is not a list of 2 lines (items)");
-            log.warning("using placeholder warning for options.signTexts.identifier");
-            identifierWarning.add(SIGN_IDENTIFIER);
-            identifierWarning.add("<config error>");
-            this.config.set("options.signTexts.identifier", identifierWarning);
-        }
-
-        for (SignType signType : SignType.values()) {
-            if (!this.config.isList("options.signTexts.other." + signType.getName())) {
-                log.warning("options.signTexts.other." + signType.getName() + " is not a list of 2 lines (items)");
-                log.warning("using placeholder warning for options.signTexts.other." + signType.getName());
-                identifierWarning.clear();
+        if (this.config.getBoolean("options.signs.enable")) {
+            String signTextsConfigurationNode = "options.signs.signTexts.";
+            String tmpFullConfigurationNode = signTextsConfigurationNode + "header";
+            List<String> identifierWarning = new ArrayList<>(2);
+            if (!this.config.isList(tmpFullConfigurationNode)
+                    || this.config.getStringList(tmpFullConfigurationNode).size() != 2) {
+                log.warning(tmpFullConfigurationNode + " is not a list of 2 lines (items)");
+                log.warning("using placeholder warning for " + tmpFullConfigurationNode);
                 identifierWarning.add(SIGN_IDENTIFIER);
                 identifierWarning.add("<config error>");
+                this.config.set(tmpFullConfigurationNode, identifierWarning);
+            }
 
+            for (SignType signType : SignType.values()) {
+                tmpFullConfigurationNode = signTextsConfigurationNode + "types." + signType.getName();
+                if (!this.config.isList(tmpFullConfigurationNode)) {
+                    log.warning(tmpFullConfigurationNode + " is not a list of 2 lines (items)");
+                    log.warning("using placeholder warning for " + tmpFullConfigurationNode);
+                    identifierWarning.clear();
+                    identifierWarning.add(SIGN_IDENTIFIER);
+                    identifierWarning.add("<config error>");
+
+                }
             }
         }
 
@@ -138,12 +143,14 @@ public final class MineAuction extends LoggableJavaPlugin {
     @Override
     public void onDisable() {
         log.fine("disabling plugin...");
-        try {
-            if (db.isValid(SQL_TIMEOUT)) {
-                db.close();
+        if (db != null) {
+            try {
+                if (db.isValid(SQL_TIMEOUT)) {
+                    db.close();
+                }
+            } catch (SQLException ex) {
+                log.warning("could not close database connection: " + ex.getMessage());
             }
-        } catch (SQLException ex) {
-            log.warning("could not close database connection: " + ex.getMessage());
         }
         log.fine("plugin disabled");
     }
