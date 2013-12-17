@@ -53,7 +53,7 @@ public final class MineAuction extends LoggableJavaPlugin {
             CheckVersion.check(this);
         }
 
-        checkDatabaseConnection();
+        //checkDatabaseConnection();
 
         //load data
         if (!this.config.getBoolean("options.signs.enable")) {
