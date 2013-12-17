@@ -27,3 +27,37 @@ options:
     checkVersion: true
     # Enable verbose (debug) logging to console
     verboseLogging: false
+    
+  signs:
+    # You can disable all MineAuction's sign functions
+    # to speed up the plugin a little if you don't use them.
+    enable: true
+    
+    # Sign text configuration - changes the appearance of MineAuction signs
+    #
+    # Please note that these changes apply to NEWLY CREATED SIGNS ONLY. In order
+    # to "recreate" the old signs, you have to run a command <command> @fixme
+    #
+    # Every sign is split in two parts - First two lines are the same throughout
+    # the whole plugin - they are the "header". The other two lines are
+    # type-specific, so you can distinct between the different sign types
+    #
+    # You can freely use colors in the signs' texts - both magic characters
+    # ('&' and '§') are accepted.
+    #
+    # Please note that it is important to use the correct amount of lines - 
+    # even if they are empty, they have to be present in config. It is also
+    # better to enclose the lines in quotes.
+    signTexts:
+      # First two lines of the sign - the header
+      header:
+        - ''
+        - '§8[§4Auction§8]'
+      # The other two lines (3rd and 4th) for each type of sign
+      types:
+        deposit:
+          - '§6    DEPOSIT'
+          - ''
+        withdraw:
+          - '§6   WITHDRAW'
+          - ''

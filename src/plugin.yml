@@ -8,10 +8,45 @@ authors: [Sognus, Sekiphp]
 load: POSTWORLD
 softdepend: []
 permissions:
-  mineauction.*:
-    description: Gives full control over MineAuction
-    default: op
+#  mineauction.*:
+#    description: Gives full control over MineAuction
+#    default: op
+#    children:
+#      - mineauction.create
+  mineauction.signs.modify.*:
+    description: Allows a player to both place and break MineAuction signs.
     children:
+      mineauction.signs.modify.place: true
+      mineauction.signs.modify.break: true
+  mineauction.signs.modify.place:
+    description: Allows a player to place MineAuction signs
+    default: op
+  mineauction.signs.modify.break:
+    description: Allows a player to break MineAuction signs
+    default: op
+  mineauction.signs.use.*:
+    description: Grants the ability to use all and any of the signs' functions
+    children:
+      mineauction.signs.use.deposit: true
+      mineauction.signs.use.withdraw: true
+  mineauction.signs.use.deposit:
+    description: Allows a player to use the deposit sign
+    default: true
+  mineauction.signs.use.withdraw:
+    description: Allows a player to use the withdraw sign
+    default: true
+  mineauction.commands.*:
+    description: Grants access to all MineAuction commands
+    children:
+      mineauction.commands.deposit: true
+      mineauction.commands.withdraw: true
+  mineauction.commands.deposit:
+    description: Allows a player to use the /mc deposit command
+    default: op
+  mineauction.commands.withdraw:
+    description: Allows a player to use the /mc withdraw command
+    default: op
+    
 commands:
   ma:
     description: MineAuction something

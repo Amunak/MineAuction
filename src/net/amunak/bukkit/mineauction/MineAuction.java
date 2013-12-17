@@ -16,35 +16,56 @@ package net.amunak.bukkit.mineauction;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import net.amunak.bukkit.mineauction.sign.SignInteractionListener;
 import java.sql.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
+import net.amunak.bukkit.mineauction.sign.SignType;
+import net.amunak.bukkit.mineauction.sign.SignStorage;
 import org.bukkit.configuration.file.FileConfiguration;
 
 /**
- * PrefixedPlayerlist is main plugin class
+ * This is MineAuction's main plugin class
  *
- * @version 1.1.5
- * @author Amunak
+ * @version 1.0
+ * @author Jiri Barous (Amunak) < http://amunak.net >
  */
 public final class MineAuction extends LoggableJavaPlugin {
 
     protected Connection db;
     public FileConfiguration config;
-    final static int SQL_TIMEOUT = 0;
+    protected SignStorage signsStorage;
+    public final static int SQL_TIMEOUT = 0;
+    public final static String SIGN_IDENTIFIER = "[MineAuction]";
+    public final static String SIGN_INVALID_IDENTIFIER = "*MineAuction*";
 
     @Override
     public void onEnable() {
+
+        //init load and config
         log = new Log(this);
         this.saveDefaultConfig();
         this.getConfig().options().copyDefaults(true);
         this.reloadConfig();
 
+        //checks, other inits
         if (this.config.getBoolean("options.general.checkVersion")) {
             CheckVersion.check(this);
         }
 
         checkDatabaseConnection();
+
+        //load data
+        if (!this.config.getBoolean("options.signs.enable")) {
+            this.signsStorage = new SignStorage(this);
+            this.signsStorage.load();
+        }
+
+        //register listeners, run
+        //getCommand(null)
+        if (!this.config.getBoolean("options.signs.enable")) {
+            getServer().getPluginManager().registerEvents(new SignInteractionListener(this), this);
+        }
     }
 
     @Override
@@ -63,6 +84,27 @@ public final class MineAuction extends LoggableJavaPlugin {
 
         if (this.config.getString("database.password").length() < 1) {
             log.fine("Database password is empty");
+        }
+
+        List<String> identifierWarning = new ArrayList<>(2);
+        if (!this.config.isList("options.signTexts.identifier")
+                || this.config.getStringList("options.signTexts.identifier").size() != 2) {
+            log.warning("options.signTexts.identifier is not a list of 2 lines (items)");
+            log.warning("using placeholder warning for options.signTexts.identifier");
+            identifierWarning.add(SIGN_IDENTIFIER);
+            identifierWarning.add("<config error>");
+            this.config.set("options.signTexts.identifier", identifierWarning);
+        }
+
+        for (SignType signType : SignType.values()) {
+            if (!this.config.isList("options.signTexts.other." + signType.getName())) {
+                log.warning("options.signTexts.other." + signType.getName() + " is not a list of 2 lines (items)");
+                log.warning("using placeholder warning for options.signTexts.other." + signType.getName());
+                identifierWarning.clear();
+                identifierWarning.add(SIGN_IDENTIFIER);
+                identifierWarning.add("<config error>");
+
+            }
         }
 
         log.fine("configuration reloaded");
@@ -104,5 +146,14 @@ public final class MineAuction extends LoggableJavaPlugin {
             log.warning("could not close database connection: " + ex.getMessage());
         }
         log.fine("plugin disabled");
+    }
+
+    /**
+     * Returns the SignsStorage of this plugin
+     *
+     * @return the SignsStorage of this plugin
+     */
+    public SignStorage getSignsStorage() {
+        return signsStorage;
     }
 }
