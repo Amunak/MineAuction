@@ -22,7 +22,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.amunak.bukkit.mineauction.MineAuction;
@@ -96,16 +99,48 @@ public class SignStorage {
     }
 
     /**
+     * Converts the location-type hashmap to something serializable
+     *
+     * @return a serializable hashmap
+     */
+    protected HashMap<SimplifiedLocation, SignType> serializeStorage() {
+        HashMap<SimplifiedLocation, SignType> serializableListOfSigns = new HashMap<>();
+        for (Map.Entry<Location, SignType> entry : this.listOfSigns.entrySet()) {
+            Location location = entry.getKey();
+            SignType signType = entry.getValue();
+            serializableListOfSigns.put(new SimplifiedLocation(location.getWorld().getUID(), location.getX(), location.getY(), location.getZ()), signType);
+        }
+        return serializableListOfSigns;
+    }
+
+    /**
      * Saves the storage to its corresponding file, overwriting the original (or
      * creating a new file if it doesn't exist). Outputs warning if the file
      * cannot be saved.
      */
     public void save() {
+
         try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(this.getDataFilePath()))) {
-            stream.writeObject(this.listOfSigns);
+            stream.writeObject(this.serializeStorage());
             stream.flush();
+            stream.close();
         } catch (IOException ex) {
             this.plugin.log.warning("sign storage file " + this.getDataFilePath().getName() + " could not be written: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Unserialize the SimplifiedLocation hashmap to the original
+     * Location-SignType map and loads the data, overwriting whatever was there
+     *
+     * @param serializedListOfSigns the serialized list of signs
+     */
+    protected void loadSerializedStorage(HashMap<SimplifiedLocation, SignType> serializedListOfSigns) {
+        this.listOfSigns.clear();
+        for (Map.Entry<SimplifiedLocation, SignType> entry : serializedListOfSigns.entrySet()) {
+            SimplifiedLocation location = entry.getKey();
+            SignType signType = entry.getValue();
+            this.listOfSigns.put(new Location(this.plugin.getServer().getWorld(location.world), location.x, location.y, location.z), signType);
         }
     }
 
@@ -121,7 +156,7 @@ public class SignStorage {
     public void load() {
         if (this.getDataFilePath().exists()) {
             try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(this.getDataFilePath()))) {
-                this.listOfSigns = (HashMap<Location, SignType>) stream.readObject();
+                loadSerializedStorage((HashMap<SimplifiedLocation, SignType>) stream.readObject());
             } catch (IOException ex) {
                 this.plugin.log.warning("sign storage file " + this.getDataFilePath().getName() + " could not be read: " + ex.getMessage());
             } catch (ClassNotFoundException ex) {
@@ -152,5 +187,23 @@ public class SignStorage {
      */
     public void setUnderlyingHashMap(HashMap<Location, SignType> map) {
         this.listOfSigns = map;
+    }
+
+    /**
+     * A Location type that makes serialization possible
+     */
+    public static class SimplifiedLocation implements Serializable {
+
+        public final UUID world;
+        public final double x;
+        public final double y;
+        public final double z;
+
+        protected SimplifiedLocation(UUID world, double x, double y, double z) {
+            this.world = world;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
     }
 }

@@ -20,6 +20,7 @@ import net.amunak.bukkit.mineauction.sign.SignInteractionListener;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import net.amunak.bukkit.mineauction.sign.MineAuctionSign;
 import net.amunak.bukkit.mineauction.sign.SignType;
 import net.amunak.bukkit.mineauction.sign.SignStorage;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -36,8 +37,6 @@ public final class MineAuction extends LoggableJavaPlugin {
     public FileConfiguration config;
     protected SignStorage signsStorage;
     public final static int SQL_TIMEOUT = 0;
-    public final static String SIGN_IDENTIFIER = "[MineAuction]";
-    public final static String SIGN_INVALID_IDENTIFIER = "*MineAuction*";
 
     @Override
     public void onEnable() {
@@ -94,7 +93,7 @@ public final class MineAuction extends LoggableJavaPlugin {
                     || this.config.getStringList(tmpFullConfigurationNode).size() != 2) {
                 log.warning(tmpFullConfigurationNode + " is not a list of 2 lines (items)");
                 log.warning("using placeholder warning for " + tmpFullConfigurationNode);
-                identifierWarning.add(SIGN_IDENTIFIER);
+                identifierWarning.add(MineAuctionSign.VALID_SIGN_IDENTIFIER);
                 identifierWarning.add("<config error>");
                 this.config.set(tmpFullConfigurationNode, identifierWarning);
             }
@@ -105,7 +104,7 @@ public final class MineAuction extends LoggableJavaPlugin {
                     log.warning(tmpFullConfigurationNode + " is not a list of 2 lines (items)");
                     log.warning("using placeholder warning for " + tmpFullConfigurationNode);
                     identifierWarning.clear();
-                    identifierWarning.add(SIGN_IDENTIFIER);
+                    identifierWarning.add(MineAuctionSign.VALID_SIGN_IDENTIFIER);
                     identifierWarning.add("<config error>");
 
                 }

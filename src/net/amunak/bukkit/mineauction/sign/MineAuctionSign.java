@@ -28,6 +28,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.SignChangeEvent;
 
 /**
  * Helper class with static methods to simplify work with MineAuction's signs
@@ -38,10 +39,17 @@ public class MineAuctionSign {
 
     public final static String VALID_SIGN_IDENTIFIER = "[MineAuction]";
     public final static String INVALID_SIGN_IDENTIFIER = "*MineAuction*";
+    public final static String LEGACY_COLOR_CODE = "&";
+    public final static String BUGGY_COLOR_CODE_SEQUENCE = "\u00C2" + ChatColor.COLOR_CHAR;
 
     /**
      * Reads the current formatting from the plugin's config file for the given
      * sign type
+     *
+     * Since some combinations of UTF-8 config files tended to break color
+     * codes, I use an ugly replace hack to fix it. The
+     * {@code BUGGY_COLOR_CODE_SEQUENCE} is replaced to
+     * {@code LEGACY_COLOR_CODE}.
      *
      * @param type the SignType to get formatting for
      * @param plugin the plugin
@@ -51,8 +59,11 @@ public class MineAuctionSign {
         List<String> lines = new ArrayList<>(4);
         lines.addAll(plugin.config.getStringList("options.signs.signTexts.header"));
         lines.addAll(2, plugin.config.getStringList("options.signs.signTexts.types." + type.getName()));
-        for (String string : lines) {
-            ChatColor.translateAlternateColorCodes('&', string);
+        for (int i = 0; i < lines.size(); i++) {
+            String string = lines.get(i);
+            string = string.replace(MineAuctionSign.BUGGY_COLOR_CODE_SEQUENCE, MineAuctionSign.LEGACY_COLOR_CODE);
+            string = ChatColor.translateAlternateColorCodes('&', string);
+            lines.set(i, string);
         }
         return lines;
     }
@@ -72,16 +83,30 @@ public class MineAuctionSign {
     }
 
     /**
+     * Formats a sign using the plugin's config, rewriting all lines
+     *
+     * @param event the {@link SignChangeEvent} "sign"
+     * @param type the type of the sign
+     * @param plugin plugin to get config values from
+     */
+    public static void format(SignChangeEvent event, SignType type, MineAuction plugin) {
+        List<String> lines = getConfiguredFormatting(type, plugin);
+        for (int i = 0; i < 4; i++) {
+            event.setLine(i, lines.get(i));
+        }
+    }
+
+    /**
      * Handles the creation of a MineAuction sign
      *
-     * @param sign the sign
+     * @param event the sign
      * @param type the type of sign
      * @param plugin plugin with signStorage
      */
-    public static void handleCreation(Sign sign, SignType type, MineAuction plugin) {
-        plugin.getSignsStorage().addItem(sign, type);
+    public static void handleCreation(SignChangeEvent event, SignType type, MineAuction plugin) {
+        plugin.getSignsStorage().addItem((Sign) event.getBlock().getState(), type);
         plugin.getSignsStorage().save();
-        format(sign, type, plugin);
+        format(event, type, plugin);
     }
 
     /**
@@ -94,6 +119,27 @@ public class MineAuctionSign {
         plugin.getSignsStorage().removeItem(sign);
         plugin.getSignsStorage().save();
         invalidate(sign);
+    }
+
+    /**
+     * Marks a sign from SignChangeEvent as invalid, and outputs a message on
+     * its last line
+     *
+     * @param event the SignChangeEvent
+     * @param message the message
+     */
+    public static void invalidate(SignChangeEvent event, String message) {
+        event.setLine(0, INVALID_SIGN_IDENTIFIER);
+        event.setLine(3, ChatColor.RED + message);
+    }
+
+    /**
+     * Convenience method, invalidates the sign with an empty message
+     *
+     * @see invalidate(SignChangeEvent event, String "")
+     */
+    public static void invalidate(SignChangeEvent event) {
+        invalidate(event, "");
     }
 
     /**
@@ -110,10 +156,10 @@ public class MineAuctionSign {
     /**
      * Convenience method, invalidates the sign with an empty message
      *
-     * @see invalidate(MineAuctionSign s, String "")
+     * @see invalidate(Sign sign, String "")
      */
-    public static void invalidate(Sign s) {
-        invalidate(s, "");
+    public static void invalidate(Sign sign) {
+        invalidate(sign, "");
     }
 
     /**

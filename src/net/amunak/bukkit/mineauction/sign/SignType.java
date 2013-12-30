@@ -49,7 +49,7 @@ public enum SignType {
      */
     public static SignType getByName(String name) {
         for (SignType type : SignType.values()) {
-            if (name.equalsIgnoreCase(name)) {
+            if (name.equalsIgnoreCase(type.getName())) {
                 return type;
             }
         }

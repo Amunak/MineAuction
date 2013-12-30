@@ -26,7 +26,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 /**
@@ -41,6 +41,7 @@ public final class SignInteractionListener implements Listener {
 
     public SignInteractionListener(MineAuction p) {
         this.plugin = p;
+        plugin.log.fine("SignInteractionListener registered");
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -61,24 +62,35 @@ public final class SignInteractionListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
-    public void blockPlaceEvent(BlockPlaceEvent event) {
-        if (MineAuctionSign.isSign(event.getBlock())) {
-            Sign sign = (Sign) event.getBlock().getState();
-            if (sign.getLine(0).trim().equals(MineAuction.SIGN_IDENTIFIER)) {
-                Player player = event.getPlayer();
-                if (player.hasPermission("mineauction.signs.modify.place")) {
-                    SignType type = SignType.getByName(sign.getLine(1).trim());
-                    if (type == null) {
-                        MineAuctionSign.invalidate(sign, "wrong type");
-                    } else {
-                        MineAuctionSign.handleCreation(sign, type, plugin);
-                        plugin.log.info(player.getName() + " created a MineAuction sign of type '" + type.toString() + "' at " + sign.getLocation().toString());
-                    }
+    public void signChangeEvent(SignChangeEvent event) {
+        plugin.log.fine("SignChangeEvent'" + event.getLine(0).trim() + "' vs '" + MineAuctionSign.VALID_SIGN_IDENTIFIER + "'");
+        if (event.getLine(0).trim().equalsIgnoreCase(MineAuctionSign.VALID_SIGN_IDENTIFIER)) {
+            Player player = event.getPlayer();
+            if (player.hasPermission("mineauction.signs.modify.place")) {
+                SignType type = SignType.getByName(event.getLine(1).trim());
+                if (type == null) {
+                    MineAuctionSign.invalidate(event, "wrong type");
+                    plugin.log.info(player, "Sign creation failed:" + ChatColor.RED + " wrong sign type");
                 } else {
-                    MineAuctionSign.invalidate(sign, "no permission");
-                    plugin.log.info(player, "Sign creation failed:" + ChatColor.RED + " insufficient permission");
-                    plugin.log.info(player.getName() + " tried to create interactive sign, but had no permission");
+                    MineAuctionSign.handleCreation(event, type, plugin);
+                    plugin.log.info(player.getName() + " created a MineAuction sign of type '" + type.toString() + "' at " + event.getBlock().getLocation().toString());
                 }
+            } else {
+                MineAuctionSign.invalidate(event, "no permission");
+                plugin.log.info(player, "Sign creation failed:" + ChatColor.RED + " insufficient permission");
+                plugin.log.info(player.getName() + " tried to create interactive sign, but had no permission");
+            }
+        }
+
+
+        if (plugin.log.raiseFineLevel) {
+            for (String string : event.getLines()) {
+                char[] b = new char[100];
+                for (int i = 0; i < string.length(); i++) {
+                    b[i * 2] = string.charAt(i);
+                    b[(i * 2) + 1] = '-';
+                }
+                plugin.log.fine(new String(b));
             }
         }
     }
