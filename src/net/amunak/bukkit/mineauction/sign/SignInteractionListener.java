@@ -70,6 +70,11 @@ public final class SignInteractionListener implements Listener {
         }
     }
 
+    /**
+     * Handles sign creation through signChangeEvent
+     *
+     * @param event
+     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void signChangeEvent(SignChangeEvent event) {
         plugin.log.fine("SignChangeEvent'" + event.getLine(0).trim() + "' vs '" + MineAuctionSign.VALID_SIGN_IDENTIFIER + "'");
@@ -92,6 +97,7 @@ public final class SignInteractionListener implements Listener {
         }
 
 
+        //debug logging
         if (plugin.log.raiseFineLevel) {
             for (String string : event.getLines()) {
                 char[] b = new char[100];
@@ -104,6 +110,12 @@ public final class SignInteractionListener implements Listener {
         }
     }
 
+    /**
+     * Handles block breaking - both actual MA sign break and tries to break the
+     * sign indirectly
+     *
+     * @param event
+     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void blockBreakEvent(BlockBreakEvent event) {
         //prevent signs from getting removed
