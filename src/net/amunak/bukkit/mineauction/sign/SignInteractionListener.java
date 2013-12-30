@@ -16,22 +16,31 @@ package net.amunak.bukkit.mineauction.sign;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import net.amunak.bukkit.mineauction.MineAuction;
 import net.amunak.bukkit.mineauction.actions.VirtualInventory;
 import org.bukkit.ChatColor;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 /**
  * Handles all the interaction with MineAuction signs: their creation, removal
  * and player-interaction (right-clicking)
+ *
+ * Thanks Wolvereness for the block destruction code
  *
  * @author Jiri Barous (Amunak) < http://amunak.net >
  */
@@ -97,19 +106,142 @@ public final class SignInteractionListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void blockBreakEvent(BlockBreakEvent event) {
-        if (MineAuctionSign.isSign(event.getBlock())) {
-            if (MineAuctionSign.isValidMineAuctionSign(event.getBlock(), plugin)) {
-                Player player = event.getPlayer();
-                if (player.hasPermission("mineauction.signs.modify.break")) {
-                    Sign sign = (Sign) event.getBlock().getState();
-                    MineAuctionSign.handleRemoval(sign, plugin);
-                    plugin.log.info(player.getName() + " removed a MineAuction sign which was located at " + sign.getLocation().toString());
-                } else {
-                    event.setCancelled(true);
-                    plugin.log.info(player, "Sign removal failed:" + ChatColor.RED + " insufficient permission");
-                    plugin.log.info(player.getName() + " tried to remove interactive sign, but had no permission");
+        //prevent signs from getting removed
+        if (!onBlockDestroyed(event, event.getPlayer(), MineAuctionSign.findAttachedSigns(event.getBlock()), event.getEventName())) {
+            if (MineAuctionSign.isSign(event.getBlock())) {
+                if (MineAuctionSign.isValidMineAuctionSign(event.getBlock(), plugin)) {
+                    Player player = event.getPlayer();
+                    if (player.hasPermission("mineauction.signs.modify.break")) {
+                        Sign sign = (Sign) event.getBlock().getState();
+                        MineAuctionSign.handleRemoval(sign, plugin);
+                        plugin.log.info(player.getName() + " removed a MineAuction sign which was located at " + sign.getLocation().toString());
+                    } else {
+                        event.setCancelled(true);
+                        plugin.log.info(player, "Sign removal failed:" + ChatColor.RED + " insufficient permission");
+                        plugin.log.info(player.getName() + " tried to remove interactive sign, but had no permission");
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * @see onBlockDestroyed(final Cancellable e, final Entity entity, final
+     * Collection<Block> block)
+     */
+    public boolean onBlockDestroyed(final Cancellable e, final Entity p, final Block b, final String eventName) {
+        return onBlockDestroyed(e, p, Collections.singleton(b), eventName);
+    }
+
+    /**
+     * Central place for checking for an event cancellation
+     *
+     * @param e Event
+     * @param entity Player or Entity causing the event
+     * @param blocks a Collection of blocks to check
+     * @return true if event is cancelled
+     */
+    public boolean onBlockDestroyed(final Cancellable e, final Entity entity, final Collection<Block> blocks, final String eventName) {
+        if (blocks != null) {
+            for (Block block : blocks) {
+                if (MineAuctionSign.isValidMineAuctionSign(block, this.plugin)) {
+                    e.setCancelled(true);
+                    String eName = "";
+                    if (entity != null) {
+                        eName = entity.getType().toString();
+                        if (entity instanceof Player) {
+                            eName += " {" + ((Player) entity).getName() + "} ";
+                            this.plugin.log.warning((Player) entity, "Event cancelled - remove the MineAuction sign first if you intended to do that.");
+                        }
+                    }
+                    this.plugin.log.fine(eName + " would destroy MineAuction sign by " + eventName + "; action prevented");
+                    break;
+                }
+            }
+        }
+        return e.isCancelled();
+    }
+
+    /**
+     * Block BlockBurnEvent if it destroyed shop
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockBlockBurn(final BlockBurnEvent e) {
+        onBlockDestroyed(e, null, e.getBlock(), e.getEventName());
+    }
+
+    /**
+     * Block LeavesDecayEvent if it destroyed shop
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockBlockFade(final BlockFadeEvent e) {
+        onBlockDestroyed(e, null, e.getBlock(), e.getEventName());
+    }
+
+    /**
+     * Block the BlockPistonExtendEvent if it will move the block a store sign
+     * is on.
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockBlockPistonExtend(final BlockPistonExtendEvent e) {
+        onBlockDestroyed(e, null, e.getBlocks(), e.getEventName());
+    }
+
+    /**
+     * Block the BlockPistonRetractEvent if it will move the block a store sign
+     * is on.
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockBlockPistonRetract(final BlockPistonRetractEvent e) {
+        final BlockFace direction = e.getDirection();
+
+        final ArrayList<Block> blocks = new ArrayList<>(2);
+        // We need to check to see if a sign is attached to the piston piece
+        final Block b = e.getBlock();
+        blocks.add(b.getRelative(direction));
+        if (!e.isSticky()) { // We only care about the second block if sticky piston is retracting.
+            blocks.add(b.getRelative(direction, 2));
+        }
+
+        onBlockDestroyed(e, null, blocks, e.getEventName());
+    }
+
+    /**
+     * Stop EntityChangeBlockEvents from affecting stores. Prevents Endermen
+     * from breaking stores, etc.
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockEntityChangeBlock(final EntityChangeBlockEvent e) {
+        onBlockDestroyed(e, e.getEntity(), e.getBlock(), e.getEventName());
+    }
+
+    /**
+     * Entity Explode event
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockEntityExplode(final EntityExplodeEvent e) {
+        onBlockDestroyed(e, e.getEntity(), e.blockList(), e.getEventName());
+    }
+
+    /**
+     * Block LeavesDecayEvent if it destroyed shop
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockLeavesDecay(final LeavesDecayEvent e) {
+        onBlockDestroyed(e, null, e.getBlock(), e.getEventName());
     }
 }

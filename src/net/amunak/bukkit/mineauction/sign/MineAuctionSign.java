@@ -17,6 +17,8 @@ package net.amunak.bukkit.mineauction.sign;
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -26,6 +28,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
@@ -41,6 +44,34 @@ public class MineAuctionSign {
     public final static String INVALID_SIGN_IDENTIFIER = "*MineAuction*";
     public final static String LEGACY_COLOR_CODE = "&";
     public final static String BUGGY_COLOR_CODE_SEQUENCE = "\u00C2" + ChatColor.COLOR_CHAR;
+
+    /**
+     * Recursively finds all signs that are attached to a given block. The block
+     * itself is not checked.
+     *
+     * @param block the block
+     * @return a collection of (sign) blocks
+     */
+    public static Collection<Block> findAttachedSigns(Block block) {
+        final ArrayList<Block> blocks = new ArrayList<>(5);
+        Collection<BlockFace> faces = new HashSet<>(4);
+        faces.add(BlockFace.NORTH);
+        faces.add(BlockFace.SOUTH);
+        faces.add(BlockFace.EAST);
+        faces.add(BlockFace.WEST);
+        for (BlockFace face : faces) {
+            Block b = block.getRelative(face);
+            if (b.getType().equals(Material.WALL_SIGN) && ((org.bukkit.material.Sign) ((Sign) b.getState()).getData()).getFacing().equals(face)) {
+                blocks.add(b);
+                blocks.addAll(findAttachedSigns(b));
+            }
+        }
+        if (block.getRelative(BlockFace.UP).getType().equals(Material.SIGN_POST)) {
+            blocks.add(block.getRelative(BlockFace.UP));
+            blocks.addAll(findAttachedSigns(block.getRelative(BlockFace.UP)));
+        }
+        return blocks;
+    }
 
     /**
      * Reads the current formatting from the plugin's config file for the given
