@@ -16,9 +16,9 @@ package net.amunak.bukkit.mineauction.sign;
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import net.amunak.bukkit.mineauction.MineAuction;
 import net.amunak.bukkit.mineauction.actions.VirtualInventory;
 import org.bukkit.ChatColor;
@@ -40,7 +40,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
  * Handles all the interaction with MineAuction signs: their creation, removal
  * and player-interaction (right-clicking)
  *
- * Thanks Wolvereness for the block destruction code
+ * Thanks Wolvereness for some of the block destruction code
  *
  * @author Jiri Barous (Amunak) < http://amunak.net >
  */
@@ -126,8 +126,8 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * @see onBlockDestroyed(final Cancellable e, final Entity entity, final
-     * Collection<Block> block)
+     * @see onBlockDestroyed(Cancellable e, Entity entity, Collection<Block>
+     * block, String eventName)
      */
     public boolean onBlockDestroyed(final Cancellable e, final Entity p, final Block b, final String eventName) {
         return onBlockDestroyed(e, p, Collections.singleton(b), eventName);
@@ -143,7 +143,12 @@ public final class SignInteractionListener implements Listener {
      */
     public boolean onBlockDestroyed(final Cancellable e, final Entity entity, final Collection<Block> blocks, final String eventName) {
         if (blocks != null) {
+            HashSet<Block> allBlocks = new HashSet<>();
             for (Block block : blocks) {
+                allBlocks.addAll(MineAuctionSign.findAttachedSigns(block));
+            }
+            allBlocks.addAll(blocks);
+            for (Block block : allBlocks) {
                 if (MineAuctionSign.isValidMineAuctionSign(block, this.plugin)) {
                     e.setCancelled(true);
                     String eName = "";
@@ -163,7 +168,7 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Block BlockBurnEvent if it destroyed shop
+     * Block BlockBurnEvent if it destroyed sign
      *
      * @param e Event
      */
@@ -173,7 +178,7 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Block LeavesDecayEvent if it destroyed shop
+     * Block LeavesDecayEvent if it destroyed sign
      *
      * @param e Event
      */
@@ -183,8 +188,7 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Block the BlockPistonExtendEvent if it will move the block a store sign
-     * is on.
+     * Block the BlockPistonExtendEvent if it moved a block with sign on it
      *
      * @param e Event
      */
@@ -194,8 +198,7 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Block the BlockPistonRetractEvent if it will move the block a store sign
-     * is on.
+     * Block the BlockPistonRetractEvent if it moved a block with sign on it
      *
      * @param e Event
      */
@@ -203,7 +206,7 @@ public final class SignInteractionListener implements Listener {
     public void onBlockBlockPistonRetract(final BlockPistonRetractEvent e) {
         final BlockFace direction = e.getDirection();
 
-        final ArrayList<Block> blocks = new ArrayList<>(2);
+        final HashSet<Block> blocks = new HashSet<>(2);
         // We need to check to see if a sign is attached to the piston piece
         final Block b = e.getBlock();
         blocks.add(b.getRelative(direction));
@@ -215,8 +218,18 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Stop EntityChangeBlockEvents from affecting stores. Prevents Endermen
-     * from breaking stores, etc.
+     * Block the BlockPhysicsEvent if it would break a sign
+     *
+     * @param e Event
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onBlockBlockPhysics(final BlockPhysicsEvent e) {
+        onBlockDestroyed(e, null, e.getBlock(), e.getEventName());
+    }
+
+    /**
+     * Stop EntityChangeBlockEvents from affecting signs. Prevents Endermen from
+     * breaking signs
      *
      * @param e Event
      */
@@ -236,7 +249,7 @@ public final class SignInteractionListener implements Listener {
     }
 
     /**
-     * Block LeavesDecayEvent if it destroyed shop
+     * Block LeavesDecayEvent if it destroyed a sign
      *
      * @param e Event
      */
